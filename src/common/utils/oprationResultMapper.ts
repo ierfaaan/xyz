@@ -1,8 +1,8 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { OperationResult } from 'src/models';
+import { TResult } from 'src/models/common/operationResult';
 
 export class OperationResultMapper {
-  mapToHttp<T>(oprationResult: OperationResult<T>) {
+  mapToHttp<T>(oprationResult: TResult<T>) {
     const oprationResultWithRequestId = {
       ...oprationResult,
       requestId: Math.random(),

@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { LoginPayloadDtoType, LoginResponseDtoType } from './dto';
 import { JwtService } from '@nestjs/jwt';
-import { OperationResult } from 'src/models';
-import { OperationResultObject } from 'src/models/common/operationResult';
+import {
+  OperationResultObject,
+  TResult,
+} from 'src/models/common/operationResult';
 
 const fakeUsers = [
   {
@@ -24,7 +26,7 @@ export class AuthService {
   login({
     username,
     password,
-  }: LoginPayloadDtoType): OperationResult<LoginResponseDtoType> {
+  }: LoginPayloadDtoType): TResult<LoginResponseDtoType> {
     const findUser = fakeUsers.find((user) => user.username === username);
     if (!findUser)
       return OperationResultObject.notFound<LoginResponseDtoType>(

@@ -1,8 +1,17 @@
+type Newable = { new (...args: readonly unknown[]): unknown };
+type AnyFn = (...args: unknown[]) => unknown;
+
+type ClassProperties<C extends Newable> = {
+  [K in keyof InstanceType<C> as InstanceType<C>[K] extends AnyFn
+    ? never
+    : K]: InstanceType<C>[K];
+};
+
 export class OperationResult<T> {
   isSuccess: boolean;
   isNotFound: boolean;
   data: T;
-  errorMessage: Record<string, string> | string;
+  errorMessage: Record<string, string>;
 
   success<T>(data: T): OperationResult<T> {
     return {
@@ -23,7 +32,7 @@ export class OperationResult<T> {
       success: this.success,
       data: null,
       errorMessage: props,
-      isNotFound: false,
+      isNotFound: true,
       isSuccess: false,
     };
   }
@@ -34,11 +43,13 @@ export class OperationResult<T> {
       notFound: this.notFound,
       success: this.success,
       data: null,
-      errorMessage,
+      errorMessage: { s: errorMessage },
       isNotFound: true,
       isSuccess: false,
     };
   }
 }
+
+export type TResult<T> = ClassProperties<typeof OperationResult<T>>;
 
 export const OperationResultObject = new OperationResult();
