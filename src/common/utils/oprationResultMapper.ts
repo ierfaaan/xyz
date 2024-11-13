@@ -1,20 +1,28 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { TResult } from 'src/models/common/operationResult';
+import { IResult } from 'src/models/common/operationResult';
 
+export interface IHttpResponse<T> {
+  result: T;
+  requestId: string;
+}
 export class OperationResultMapper {
-  mapToHttp<T>(oprationResult: TResult<T>) {
-    const oprationResultWithRequestId = {
-      ...oprationResult,
-      requestId: Math.random(),
-    };
-
+  mapToHttp<T>(oprationResult: IResult<T>): IHttpResponse<T> {
     if (!oprationResult.isSuccess)
-      throw new BadRequestException(oprationResultWithRequestId);
+      throw new BadRequestException({
+        requestId: String(Math.random()),
+        result: oprationResult.errorMessage,
+      });
 
     if (oprationResult.isNotFound)
-      throw new NotFoundException(oprationResultWithRequestId);
+      throw new NotFoundException({
+        requestId: String(Math.random()),
+        result: oprationResult.errorMessage,
+      });
 
-    return oprationResultWithRequestId;
+    return {
+      requestId: String(Math.random()),
+      result: oprationResult.data,
+    };
   }
 }
 
