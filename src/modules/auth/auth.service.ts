@@ -1,19 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import { LoginPayloadDtoType, LoginResponseDtoType } from './dto';
+import { LoginPayloadDtoType } from './dto';
 import { JwtService } from '@nestjs/jwt';
 import {
-  IResult,
-  OperationResultObject,
-} from 'src/models/common/operationResult';
+  UserValidatePayloadDtoType,
+  UserValidateResponseDtoType,
+} from './dto/validate.dto';
+import { IOprationResult } from 'src/common/interfaces/HttpResponse';
+import { Operation } from 'src/common/utils/opration';
 
 const fakeUsers = [
   {
-    id: 1,
+    id: '1',
     username: 'erfan',
     password: 'password',
   },
   {
-    id: 2,
+    id: '2',
     username: 'mari',
     password: 'marimari',
   },
@@ -23,23 +25,35 @@ const fakeUsers = [
 export class AuthService {
   constructor(private readonly jwtService: JwtService) {}
 
-  login({
+  async validateUser({
     username,
     password,
-  }: LoginPayloadDtoType): IResult<LoginResponseDtoType> {
+  }: UserValidatePayloadDtoType): Promise<
+    IOprationResult<UserValidateResponseDtoType>
+  > {
     const findUser = fakeUsers.find((user) => user.username === username);
-    if (!findUser)
-      return OperationResultObject.notFound<LoginResponseDtoType>(
-        'user not found!',
-      );
-    if (password === findUser.password) {
-      const { password: _pass, ...userWithoutPassword } = findUser;
-      const loginResult = this.jwtService.sign(userWithoutPassword);
-      return OperationResultObject.success({ jwt: loginResult });
-    } else {
-      return OperationResultObject.error<LoginResponseDtoType>({
-        password: 'invalid password!',
+
+    if (!findUser || findUser.password !== password) {
+      return Operation.operationError({
+        message: 'The username or password is incorrect.',
+        fieldErrors: {
+          username: 'username is incorrect',
+          password: 'password is incorrect',
+        },
       });
     }
+
+    const { password: _pass, ...userWithoutPassword } = findUser;
+    return Operation.operationSuccess({
+      result: userWithoutPassword,
+    });
+  }
+
+  login({ username, id }: LoginPayloadDtoType) {
+    const loginResult = this.jwtService.sign({ username, id });
+    return Operation.operationSuccess({
+      result: { token: loginResult },
+      message: 'The login operation was successful.',
+    });
   }
 }

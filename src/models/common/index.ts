@@ -1,1 +1,0 @@
-export { OperationResult } from './operationResult';
