@@ -7,19 +7,19 @@ import {
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
-import { IHttpResponse, IOprationResult } from '../interfaces/HttpResponse';
+import { IHttpResponse, IOperationResult } from '../types/HttpResponse';
 
 @Injectable()
 export class ResponseInterceptor<T>
   implements
     NestInterceptor<
-      Omit<IOprationResult<T>, 'type' | 'fieldErrors'>,
+      Omit<IOperationResult<T>, 'type' | 'fieldErrors'>,
       IHttpResponse<T>
     >
 {
   intercept(
     context: ExecutionContext,
-    next: CallHandler<Omit<IOprationResult<T>, 'type' | 'fieldErrors'>>,
+    next: CallHandler<Omit<IOperationResult<T>, 'type' | 'fieldErrors'>>,
   ): Observable<IHttpResponse<T>> {
     return next.handle().pipe(
       map((response) => {

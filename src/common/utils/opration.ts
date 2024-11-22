@@ -1,10 +1,10 @@
-import { NotFoundException } from '@nestjs/common';
-import { IOprationResult, OpreationType } from '../interfaces/HttpResponse';
+import { IOperationResult, OpreationType } from '../types/HttpResponse';
 import { BadRequestExceptionApp } from '../exceptions';
+import { NotFoundExceptionApp } from '../exceptions/NotFoundException';
 
-export const operationProcessor = <T>(
-  response: IOprationResult<T>,
-): Omit<IOprationResult<T>, 'type' | 'fieldErrors'> => {
+const processor = <T>(
+  response: IOperationResult<T>,
+): Omit<IOperationResult<T>, 'type' | 'fieldErrors'> => {
   const { type, ...errorResponse } = response;
 
   if (response.type === OpreationType.Error) {
@@ -15,7 +15,7 @@ export const operationProcessor = <T>(
   }
 
   if (response.type === OpreationType.NotFound) {
-    throw new NotFoundException(errorResponse);
+    throw new NotFoundExceptionApp({ message: errorResponse.message });
   }
 
   return {
@@ -30,24 +30,23 @@ interface IOperationProps<T> {
   fieldErrors?: Record<string, string | string[]>;
 }
 
-const operationSuccess = <TData>({
+const success = <TData>({
   message = 'The operation was successful.',
   result,
-  fieldErrors = null,
-}: IOperationProps<TData>): IOprationResult<TData> => {
+}: IOperationProps<TData>): IOperationResult<TData> => {
   return {
     message,
-    fieldErrors,
+    fieldErrors: null,
     result: result,
     type: OpreationType.Success,
   };
 };
 
-const operationError = <TData>({
+const error = <TData>({
   message = 'The operation failed.',
   result = null,
   fieldErrors,
-}: IOperationProps<TData>): IOprationResult<TData> => {
+}: IOperationProps<TData>): IOperationResult<TData> => {
   return {
     result,
     fieldErrors,
@@ -56,8 +55,31 @@ const operationError = <TData>({
   };
 };
 
+const notFoundError = <TData>({
+  message = 'notFound!',
+}: IOperationProps<TData>): IOperationResult<TData> => {
+  return {
+    result: null,
+    fieldErrors: null,
+    message,
+    type: OpreationType.NotFound,
+  };
+};
+const forbiddenError = <TData>({
+  message = 'You do not have permission to perform this operation',
+}: IOperationProps<TData>): IOperationResult<TData> => {
+  return {
+    result: null,
+    fieldErrors: null,
+    message,
+    type: OpreationType.ForbiddenError,
+  };
+};
+
 export const Operation = {
-  operationProcessor,
-  operationSuccess,
-  operationError,
+  processor,
+  success,
+  error,
+  notFoundError,
+  forbiddenError,
 };

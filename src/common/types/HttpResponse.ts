@@ -11,9 +11,10 @@ export enum OpreationType {
   Success = 'success',
   Error = 'error',
   NotFound = 'notFound',
+  ForbiddenError = 'forbiddenError',
 }
 
-export interface IOprationResult<T = any> {
+export interface IOperationResult<T = any> {
   result: T;
   type: OpreationType;
   message: string;

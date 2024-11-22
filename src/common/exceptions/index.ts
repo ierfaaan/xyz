@@ -1,1 +1,1 @@
-export { BadRequestExceptionApp } from './badRequest.exception';
+export { BadRequestExceptionApp } from './BadRequestException';

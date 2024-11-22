@@ -7,10 +7,10 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { v4 as uuid } from 'uuid';
-import { IHttpResponse } from '../interfaces/HttpResponse';
+import { IHttpResponse } from '../types/HttpResponse';
 
 @Catch(InternalServerErrorException)
-export class GlobalErrorFilter implements ExceptionFilter {
+export class InternalServerErrorExceptionFilter implements ExceptionFilter {
   catch(exception: InternalServerErrorException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();

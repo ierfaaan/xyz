@@ -2,18 +2,19 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './modules';
 import {
   BadRequestExceptionGlobalFilter,
-  GlobalErrorFilter,
+  InternalServerErrorExceptionFilter,
+  NotFoundExceptionFilter,
+  UnauthorizedExceptionFilter,
 } from './common/filters';
 import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './common/interceptors/esponse.interceptor';
 import { BadRequestExceptionApp } from './common/exceptions';
-import { UnauthorizedExceptionFilter } from './common/filters/unauthorizedException';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
+      whitelist: false,
       forbidNonWhitelisted: true,
       transform: true,
       exceptionFactory(errors) {
@@ -41,7 +42,8 @@ async function bootstrap() {
   );
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(
-    new GlobalErrorFilter(),
+    new InternalServerErrorExceptionFilter(),
+    new NotFoundExceptionFilter(),
     new BadRequestExceptionGlobalFilter(),
     new UnauthorizedExceptionFilter(),
   );

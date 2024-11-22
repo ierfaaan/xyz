@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { v4 as uuid } from 'uuid';
-import { IHttpResponse, IOprationResult } from '../interfaces/HttpResponse';
+import { IHttpResponse, IOperationResult } from '../types/HttpResponse';
 
 @Catch(BadRequestException)
 export class BadRequestExceptionGlobalFilter implements ExceptionFilter {
@@ -16,7 +16,7 @@ export class BadRequestExceptionGlobalFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const status = exception.getStatus();
     const errorResponse = exception.getResponse() as Omit<
-      IOprationResult,
+      IOperationResult,
       'type'
     >;
 

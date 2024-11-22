@@ -1,0 +1,90 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  username    String   @unique
+  password    String
+  firstname   String?
+  lastname    String?
+  phone       String?
+  email       String?  @unique
+  avatar      String?  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  status      Status   @default(ACTIVE)
+
+  TeamMembership TeamMembership[]
+  ProjectMembership ProjectMembership[]
+}
+
+model Team {
+  id              Int       @id @default(autoincrement())
+  name            String
+  teamId          String    @default(uuid())
+  logo            String?  
+  banner          String?  
+  slogan          String?
+  manifesto       String?
+  parentId        Int? 
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  TeamMembership  TeamMembership[] 
+
+  projects        Project[]  @relation("TeamProjects")
+}
+
+model Project {
+  id              Int       @id @default(autoincrement())
+  projectId       String    @default(uuid())
+  name            String
+  logo            String?
+  banner          String?  
+  slogan          String?
+  manifesto       String?
+  parentId        Int? 
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  ProjectMembership ProjectMembership[]
+
+  teamId          Int
+  team            Team      @relation("TeamProjects", fields: [teamId], references: [id],onDelete: Cascade)
+}
+
+model TeamMembership {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  teamId    Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  status    Status    @default(ACTIVE)
+  team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
+  role      String    
+  accessList String[]
+}
+
+model ProjectMembership {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  projectId Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  status    Status    @default(ACTIVE)
+  user      User      @relation(fields: [userId], references: [id])
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  role      String    
+  accessList String[]
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  BAN
+}

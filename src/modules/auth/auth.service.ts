@@ -5,36 +5,33 @@ import {
   UserValidatePayloadDtoType,
   UserValidateResponseDtoType,
 } from './dto/validate.dto';
-import { IOprationResult } from 'src/common/interfaces/HttpResponse';
+import { IOperationResult } from 'src/common/types/HttpResponse';
 import { Operation } from 'src/common/utils/opration';
-
-const fakeUsers = [
-  {
-    id: '1',
-    username: 'erfan',
-    password: 'password',
-  },
-  {
-    id: '2',
-    username: 'mari',
-    password: 'marimari',
-  },
-];
+import { PrismaService } from 'src/common/services';
+import * as bcrypyt from 'bcrypt';
+import { RegisterPayloadDtoType } from './dto/register';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly prismaService: PrismaService,
+  ) {}
 
   async validateUser({
     username,
     password,
   }: UserValidatePayloadDtoType): Promise<
-    IOprationResult<UserValidateResponseDtoType>
+    IOperationResult<UserValidateResponseDtoType>
   > {
-    const findUser = fakeUsers.find((user) => user.username === username);
+    const findUser = await this.prismaService.user.findUnique({
+      where: {
+        username,
+      },
+    });
 
-    if (!findUser || findUser.password !== password) {
-      return Operation.operationError({
+    if (!findUser || !bcrypyt.compareSync(password, findUser.password)) {
+      return Operation.error({
         message: 'The username or password is incorrect.',
         fieldErrors: {
           username: 'username is incorrect',
@@ -44,16 +41,50 @@ export class AuthService {
     }
 
     const { password: _pass, ...userWithoutPassword } = findUser;
-    return Operation.operationSuccess({
+    return Operation.success({
       result: userWithoutPassword,
     });
   }
 
   login({ username, id }: LoginPayloadDtoType) {
     const loginResult = this.jwtService.sign({ username, id });
-    return Operation.operationSuccess({
+    return Operation.success({
       result: { token: loginResult },
       message: 'The login operation was successful.',
+    });
+  }
+
+  async register({
+    password,
+    username,
+  }: RegisterPayloadDtoType): Promise<IOperationResult<null>> {
+    const findUser = await this.prismaService.user.findUnique({
+      where: {
+        username,
+      },
+    });
+
+    if (findUser) {
+      return Operation.error({
+        message: 'Username already taken. Choose another.',
+        fieldErrors: {
+          username: 'Username already taken. Choose another.',
+        },
+      });
+    }
+
+    const hashPassword = bcrypyt.hashSync(password, 10);
+
+    await this.prismaService.user.create({
+      data: {
+        password: hashPassword,
+        username: username,
+      },
+    });
+
+    return Operation.success({
+      result: null,
+      message: 'Registration successful.',
     });
   }
 }
