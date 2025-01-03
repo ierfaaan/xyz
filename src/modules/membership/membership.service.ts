@@ -18,7 +18,23 @@ export class MembershipService {
     const team = await this.prismaService.team.findUnique({
       where: { id: Number(payload.teamId) },
       include: {
-        TeamMembership: true,
+        TeamMembership: {
+          select: {
+            id: true,
+            userId: true,
+            status: true,
+            user: {
+              select: {
+                firstname: true,
+                lastname: true,
+                avatar: true,
+                email: true,
+                phone: true,
+                username: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -57,8 +73,6 @@ export class MembershipService {
       data: {
         userId: Number(payload.memberId),
         teamId: Number(payload.teamId),
-        role: role ?? DEFAULT_TEAM_ROLE.MEMBER,
-        accessList: accessList,
       },
     });
 
@@ -162,8 +176,6 @@ export class MembershipService {
       data: {
         userId: Number(payload.memberId),
         projectId: Number(payload.projectId),
-        role: role ?? DEFAULT_RPOJECT_ROLE.MEMBER,
-        accessList: accessList,
       },
     });
 

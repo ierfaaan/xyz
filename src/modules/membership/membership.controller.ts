@@ -21,8 +21,10 @@ import {
 import { TeamAccessGuard } from 'src/common/Guards/TeamAccessGuard';
 import { Operation } from 'src/common/utils/opration';
 import { ProjectAccessGuard } from 'src/common/Guards/ProjectAccessGuard';
+import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 
 @Controller('membership/teams/:teamId')
+@UseGuards(JwtAuthGuard)
 export class MembershipController {
   constructor(private readonly memebershipService: MembershipService) {}
 

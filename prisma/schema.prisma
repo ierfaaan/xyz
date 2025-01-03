@@ -20,7 +20,7 @@ model User {
   updatedAt   DateTime @updatedAt
   status      Status   @default(ACTIVE)
 
-  TeamMembership TeamMembership[]
+  TeamMembership TeamMembership[] 
   ProjectMembership ProjectMembership[]
 }
 
@@ -48,7 +48,6 @@ model Project {
   banner          String?  
   slogan          String?
   manifesto       String?
-  parentId        Int? 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   ProjectMembership ProjectMembership[]
@@ -65,10 +64,12 @@ model TeamMembership {
   updatedAt DateTime  @updatedAt
   status    Status    @default(ACTIVE)
   team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id])
-  role      String    
-  accessList String[]
+  user      User      @relation(fields: [userId], references: [id],onDelete: Cascade)
+  roleName  String?
+
+  TeamMembershipRole TeamMembershipRole[]
 }
+
 
 model ProjectMembership {
   id        Int       @id @default(autoincrement())
@@ -79,12 +80,75 @@ model ProjectMembership {
   status    Status    @default(ACTIVE)
   user      User      @relation(fields: [userId], references: [id])
   project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  role      String    
-  accessList String[]
+  roleName  String?
+
+  ProjectMembershipRole ProjectMembershipRole[]
 }
 
 enum Status {
   ACTIVE
   INACTIVE
   BAN
+}
+
+
+model Role {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  scope     Scope     
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  Permission RoleActions[]
+
+  TeamMembershipRole TeamMembershipRole[]
+
+  ProjectMembershipRole ProjectMembershipRole[]
+}
+
+model Actions {
+  id        Int       @id @default(autoincrement())
+  action    String    @unique
+  scope     Scope     
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  permissions RoleActions[] 
+}
+
+model RoleActions {
+  id                Int       @id @default(autoincrement())
+  roleId            Int       
+  actionId Int
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  role              Role             @relation(fields: [roleId], references: [id])
+  permissionAction  Actions @relation(fields: [actionId], references: [id])
+}
+
+enum Scope {
+  TEAM
+  PROJECT
+}
+
+model TeamMembershipRole {
+  id              Int       @id @default(autoincrement())
+  teamMembershipId Int
+  roleId          Int
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  teamMembership  TeamMembership @relation(fields: [teamMembershipId], references: [id], onDelete: Cascade)
+  role            Role           @relation(fields: [roleId], references: [id])
+}
+
+model ProjectMembershipRole {
+  id               Int       @id @default(autoincrement())
+  projectMembershipId Int
+  roleId           Int
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  projectMembership ProjectMembership @relation(fields: [projectMembershipId], references: [id], onDelete: Cascade)
+  role              Role              @relation(fields: [roleId], references: [id])
 }

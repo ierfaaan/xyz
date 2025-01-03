@@ -1,4 +1,8 @@
 import { SetMetadata } from '@nestjs/common';
+import { ProjectOperations, TeamOperations } from '../constants/operations';
 
-export const OperationName = (...roles: string[]) =>
-  SetMetadata('operationName', roles);
+export const OperationName = (
+  operationName:
+    | (typeof TeamOperations)[keyof typeof TeamOperations]
+    | ProjectOperations,
+) => SetMetadata('operationName', operationName);

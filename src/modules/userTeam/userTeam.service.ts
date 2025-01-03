@@ -6,13 +6,10 @@ import { GetUserTeamResponseDto } from './dto/getUserTeam.dto';
 import { TUserIdFromToken } from 'src/common/types/userId';
 import { PrismaService } from 'src/common/services';
 import {
-  CreateOrEditUserTeamPayloadDto,
+  CreateUserTeamPayloadDto,
   CreateUserOrEditTeamResponseDto,
+  EditUserTeamPayloadDto,
 } from './dto/createOrEditUserTeam.dto';
-import {
-  DEFAULT_TEAM_ROLE,
-  DEFAULT_TEAM_ROLL_ACCESS,
-} from 'src/common/constants/defaultRole';
 
 @Injectable()
 export class UserTeamService {
@@ -58,6 +55,13 @@ export class UserTeamService {
           },
         },
       },
+      include: {
+        TeamMembership: {
+          select: {
+            roleName: true,
+          },
+        },
+      },
     });
 
     if (!userTeam || userTeam.length === 0) {
@@ -65,24 +69,30 @@ export class UserTeamService {
     }
 
     return Operation.success<GetUserTeamResponseDto[]>({
-      result: userTeam,
+      result: userTeam.map(({ TeamMembership, ...other }) => ({
+        ...other,
+        roleName: TeamMembership[0].roleName,
+      })),
     });
   }
 
   async createUserTeam(
     userId: TUserIdFromToken,
-    createUserBody: CreateOrEditUserTeamPayloadDto,
+    createUserBody: CreateUserTeamPayloadDto,
   ): Promise<IOperationResult<CreateUserOrEditTeamResponseDto>> {
-    const existingTeam = await this.prismaService.team.findFirst({
-      where: {
-        teamId: createUserBody.teamId,
-      },
-    });
-
-    if (existingTeam) {
-      return Operation.error({
-        message: 'Team ID must be unique. The provided teamId already exists.',
+    if (createUserBody.teamId) {
+      const existingTeam = await this.prismaService.team.findFirst({
+        where: {
+          teamId: createUserBody.teamId,
+        },
       });
+
+      if (existingTeam) {
+        return Operation.error({
+          message:
+            'Team ID must be unique. The provided teamId already exists.',
+        });
+      }
     }
 
     const team = await this.prismaService.team.create({
@@ -92,10 +102,23 @@ export class UserTeamService {
           create: {
             userId: Number(userId),
             status: 'ACTIVE',
-            role: DEFAULT_TEAM_ROLE.OWNER,
-            accessList: DEFAULT_TEAM_ROLL_ACCESS.TEAM_OWNER,
+            roleName: 'creator',
           },
         },
+      },
+    });
+
+    const teamMembership = await this.prismaService.teamMembership.findFirst({
+      where: {
+        teamId: team.id,
+        userId: Number(userId),
+      },
+    });
+
+    await this.prismaService.teamMembershipRole.create({
+      data: {
+        roleId: 1,
+        teamMembershipId: teamMembership.id,
       },
     });
 
@@ -107,7 +130,7 @@ export class UserTeamService {
 
   async editUserTeam(
     payload: SingleTeamPayloadDto,
-    editUserBody: CreateOrEditUserTeamPayloadDto,
+    editUserBody: EditUserTeamPayloadDto,
   ): Promise<IOperationResult<CreateUserOrEditTeamResponseDto>> {
     await this.findUserTeam(payload, false);
 

@@ -10,10 +10,7 @@ import {
   CreateUserOrEditProjectResponseDto,
 } from './dto/createOrEditUserProject.dto';
 
-import {
-  DEFAULT_RPOJECT_ROLE,
-  DEFAULT_PROJECT_ROLL_ACCESS,
-} from 'src/common/constants/defaultRole';
+import { DEFAULT_RPOJECT_ROLE } from 'src/common/constants/defaultRole';
 
 @Injectable()
 export class UserTeamProjectService {
@@ -31,7 +28,7 @@ export class UserTeamProjectService {
         ProjectMembership: {
           some: {
             userId: Number(userId),
-            role: DEFAULT_RPOJECT_ROLE.OWNER,
+            roleName: DEFAULT_RPOJECT_ROLE.OWNER,
           },
         },
       },
@@ -60,7 +57,7 @@ export class UserTeamProjectService {
         ProjectMembership: {
           some: {
             userId: Number(userId),
-            role: DEFAULT_RPOJECT_ROLE.OWNER,
+            roleName: DEFAULT_RPOJECT_ROLE.OWNER,
           },
         },
       },
@@ -71,7 +68,7 @@ export class UserTeamProjectService {
     }
 
     return Operation.success<GetUserProjectResponseDto[]>({
-      result: userProject,
+      result: userProject.map((item) => ({ ...item, parentId: 4 })),
     });
   }
 
@@ -88,8 +85,7 @@ export class UserTeamProjectService {
           create: {
             userId: Number(paramPayload.userId),
             status: 'ACTIVE',
-            role: DEFAULT_RPOJECT_ROLE.OWNER,
-            accessList: DEFAULT_PROJECT_ROLL_ACCESS.Project_OWNER,
+            roleName: DEFAULT_RPOJECT_ROLE.OWNER,
           },
         },
       },

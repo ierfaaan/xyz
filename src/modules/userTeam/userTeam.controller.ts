@@ -13,7 +13,10 @@ import { UserTeamService } from './userTeam.service';
 import { Operation } from 'src/common/utils/opration';
 import { UserIdFromToken } from 'src/common/decorators/jwt.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
-import { CreateOrEditUserTeamPayloadDto } from './dto/createOrEditUserTeam.dto';
+import {
+  CreateUserTeamPayloadDto,
+  EditUserTeamPayloadDto,
+} from './dto/createOrEditUserTeam.dto';
 import { OperationName } from 'src/common/decorators/operation.decorator';
 import { TeamOperations } from 'src/common/constants/operations';
 import { TeamAccessGuard } from 'src/common/Guards/TeamAccessGuard';
@@ -45,7 +48,7 @@ export class UserTeamController {
   @Post()
   async createUserTeam(
     @UserIdFromToken() userId: SingleTeamPayloadDto['userId'],
-    @Body() createUserBody: CreateOrEditUserTeamPayloadDto,
+    @Body() createUserBody: CreateUserTeamPayloadDto,
   ) {
     return Operation.processor(
       await this.userTeamService.createUserTeam(userId, createUserBody),
@@ -58,7 +61,7 @@ export class UserTeamController {
   async editUserTeam(
     @UserIdFromToken() userId: SingleTeamPayloadDto['userId'],
     @Param('teamId') teamId: SingleTeamPayloadDto['teamId'],
-    @Body() editUserBody: CreateOrEditUserTeamPayloadDto,
+    @Body() editUserBody: EditUserTeamPayloadDto,
   ) {
     return Operation.processor(
       await this.userTeamService.editUserTeam({ teamId, userId }, editUserBody),

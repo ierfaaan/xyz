@@ -1,13 +1,31 @@
 import { Team, Prisma } from '@prisma/client';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
-export class CreateOrEditUserTeamPayloadDto implements Prisma.TeamCreateInput {
+export class CreateUserTeamPayloadDto implements Prisma.TeamCreateInput {
   @IsNotEmpty({ message: 'team name is required' })
   @IsString()
   name: string;
 
+  @IsNotEmpty({ message: 'team id cannot be empty.' })
+  @IsString()
+  @IsOptional()
+  teamId?: string;
+
+  logo?: string;
+  banner?: string;
+  slogan?: string;
+  manifesto?: string;
+}
+
+export class EditUserTeamPayloadDto implements Prisma.TeamCreateInput {
   @IsNotEmpty({ message: 'team name is required' })
   @IsString()
+  @IsOptional()
+  name: string;
+
+  @IsNotEmpty({ message: 'team id cannot be empty.' })
+  @IsString()
+  @IsOptional()
   teamId?: string;
 
   logo?: string;

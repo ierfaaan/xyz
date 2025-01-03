@@ -13,5 +13,7 @@ export class CommonMembershipPayloadDto {
 
 export class CommonAddOrEditMembershipPayloadDto<IsTeam extends boolean> {
   role: string;
-  accessList: IsTeam extends true ? TeamOperations[] : ProjectOperations[];
+  accessList: IsTeam extends true
+    ? (typeof TeamOperations)[]
+    : ProjectOperations[];
 }

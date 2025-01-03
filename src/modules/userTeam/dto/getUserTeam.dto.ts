@@ -1,14 +1,15 @@
 import { Team } from '@prisma/client';
 
 export class GetUserTeamResponseDto implements Team {
-  banner: string;
+  banner: string | null;
   createdAt: Date;
   id: number;
-  logo: string;
-  manifesto: string;
+  logo: string | null;
+  manifesto: string | null;
   name: string;
-  parentId: number;
-  slogan: string;
+  parentId: number | null;
+  slogan: string | null;
   teamId: string;
   updatedAt: Date;
+  roleName: string;
 }

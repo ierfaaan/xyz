@@ -77,8 +77,6 @@ export class UserSubTeamService {
           create: {
             userId: Number(payload.userId),
             status: 'ACTIVE',
-            role: DEFAULT_TEAM_ROLE.OWNER,
-            accessList: DEFAULT_TEAM_ROLL_ACCESS.TEAM_OWNER,
           },
         },
       },
