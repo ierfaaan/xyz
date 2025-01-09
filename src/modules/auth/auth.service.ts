@@ -57,6 +57,9 @@ export class AuthService {
   async register({
     password,
     username,
+    email,
+    firstname,
+    lastname,
   }: RegisterPayloadDtoType): Promise<IOperationResult<null>> {
     const findUser = await this.prismaService.user.findUnique({
       where: {
@@ -79,6 +82,9 @@ export class AuthService {
       data: {
         password: hashPassword,
         username: username,
+        firstname,
+        lastname,
+        email,
       },
     });
 

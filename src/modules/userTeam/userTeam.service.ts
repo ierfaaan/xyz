@@ -106,19 +106,15 @@ export class UserTeamService {
           },
         },
       },
-    });
-
-    const teamMembership = await this.prismaService.teamMembership.findFirst({
-      where: {
-        teamId: team.id,
-        userId: Number(userId),
+      include: {
+        TeamMembership: true,
       },
     });
 
     await this.prismaService.teamMembershipRole.create({
       data: {
         roleId: 1,
-        teamMembershipId: teamMembership.id,
+        teamMembershipId: team.TeamMembership[0].id,
       },
     });
 

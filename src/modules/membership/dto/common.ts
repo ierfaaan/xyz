@@ -6,13 +6,13 @@ import { TUserIdFromToken } from 'src/common/types/userId';
 
 export class CommonMembershipPayloadDto {
   userId: TUserIdFromToken;
-  memberId: string;
-  teamId?: string;
-  projectId?: string;
+  teamId: string;
 }
 
 export class CommonAddOrEditMembershipPayloadDto<IsTeam extends boolean> {
-  role: string;
+  managerUsername?: string;
+  username: string;
+  roleName: string;
   accessList: IsTeam extends true
     ? (typeof TeamOperations)[]
     : ProjectOperations[];

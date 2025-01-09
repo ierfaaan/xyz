@@ -12,7 +12,6 @@ export class TeamAccessGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const userId = request.user.id;
-    console.log(userId);
     const requiredRole = this.reflector.get<string>(
       'operationName',
       context.getHandler(),

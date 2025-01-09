@@ -63,10 +63,10 @@ model TeamMembership {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   status    Status    @default(ACTIVE)
-  team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id],onDelete: Cascade)
+  team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade,onUpdate: Cascade)
+  user      User      @relation(fields: [userId], references: [id],onDelete: Cascade,onUpdate: Cascade)
   roleName  String?
-
+  parentId  Int?      
   TeamMembershipRole TeamMembershipRole[]
 }
 
