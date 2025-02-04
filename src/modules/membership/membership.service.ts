@@ -1,33 +1,38 @@
 import { Injectable } from '@nestjs/common';
-import {
-  CommonAddOrEditMembershipPayloadDto,
-  CommonMembershipPayloadDto,
-} from './dto/common';
+
 import { PrismaService } from 'src/common/services';
 import { Operation } from 'src/common/utils/opration';
-
-type TeamHierarchy = {
-  id: number; // شناسه تیم
-  parentId: number | null; // شناسه تیم والد (ممکن است NULL باشد برای تیم سطح بالا)
-};
+import { RequestDto } from './dto/request';
+import { MembershipPayloadDto } from './dto/request/payload.dto';
+import { DEFAULT_ROLES_ID } from 'src/common/constants/defaultRole';
+import { UserSpaceService } from '../user-space/space.service';
 
 @Injectable()
 export class MembershipService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly userSpaceService: UserSpaceService,
+    private readonly prismaService: PrismaService,
+  ) {}
 
-  async getTeamMember(
-    payload: Omit<CommonMembershipPayloadDto, 'memberUsername'>,
-  ) {
-    const team = await this.prismaService.team.findUnique({
-      where: { id: Number(payload.teamId) },
+  async getSpaceMemebers(payload: RequestDto['Payload']) {
+    const space = await this.prismaService.space.findUnique({
+      where: { id: Number(payload.spaceId) },
       include: {
-        TeamMembership: {
+        spaceMembership: {
           select: {
             id: true,
             userId: true,
             status: true,
-            parentId: true,
-            roleName: true,
+            spaceMembershipRole: {
+              select: {
+                spaceRole: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
             user: {
               select: {
                 firstname: true,
@@ -43,240 +48,88 @@ export class MembershipService {
       },
     });
 
-    if (!team) {
+    if (!space) {
       return Operation.notFoundError({ message: 'Team does not exists!' });
     }
 
     return Operation.success({
       message: 'Team members retrieved successfully.',
-      result: team.TeamMembership.map(({ user, ...other }) => ({
-        ...other,
-        ...user,
-      })),
+      result: space.spaceMembership.map(
+        ({ user, spaceMembershipRole, ...other }) => ({
+          ...other,
+          ...user,
+          roles: spaceMembershipRole.map((role) => role.spaceRole),
+        }),
+      ),
     });
   }
 
-  async addTeamMember(
-    {
-      accessList: _accessList = [],
-      roleName,
-      managerUsername,
-      username,
-    }: CommonAddOrEditMembershipPayloadDto<true>,
-    payload: CommonMembershipPayloadDto,
+  async addMemberToSpace(
+    { username, roles }: RequestDto['AddMembershipBody'],
+    payload: MembershipPayloadDto,
   ) {
-    const [team, member] = await Promise.all([
-      this.prismaService.team.findUnique({
-        where: { id: Number(payload.teamId) },
+    const [space, user] = await Promise.all([
+      this.prismaService.space.findUnique({
+        where: { id: Number(payload.spaceId) },
       }),
       this.prismaService.user.findFirst({
         where: { username: username },
       }),
     ]);
 
-    if (!team) {
-      return Operation.notFoundError({ message: 'Team does not exist!' });
+    if (!space) {
+      return Operation.error({ message: 'Space does not exist!' });
     }
 
-    if (!member) {
-      return Operation.notFoundError({ message: 'Member does not exist!' });
+    if (!user) {
+      return Operation.error({ message: 'Member does not exist!' });
     }
 
-    const teamsHierarchy = await this.prismaService.$queryRawUnsafe<
-      TeamHierarchy[]
-    >(`
-    WITH RECURSIVE TeamHierarchy AS (
-      SELECT id, "parentId"
-      FROM "Team"
-      WHERE id = ${Number(payload.teamId)}
-      UNION ALL
-      SELECT t.id, t."parentId"
-      FROM "Team" t
-      INNER JOIN TeamHierarchy th ON t.id = th."parentId"
-    )
-    SELECT * FROM TeamHierarchy;
-  `);
+    const parentSpaces = await this.userSpaceService.findAllSpaceParents(
+      space.id,
+    );
+    // Add member to all spaces (current space + parent spaces)
+    await this.prismaService.spaceMembership.createMany({
+      data: parentSpaces.map((spaceId) => ({
+        spaceId: spaceId,
+        userId: user.id,
+      })),
+    });
 
-    if (!teamsHierarchy || teamsHierarchy.length === 0) {
-      return Operation.notFoundError({ message: 'Hierarchy not found!' });
-    }
+    const membersId = await this.prismaService.spaceMembership.findMany({
+      where: {
+        spaceId: {
+          in: parentSpaces,
+        },
+        userId: user.id,
+      },
+    });
 
-    for (const hierarchyTeam of teamsHierarchy) {
-      if (managerUsername) {
-        const manager = await this.prismaService.user.findFirst({
-          where: { username: managerUsername },
-        });
+    const mainSpace = membersId.find((membersOfSpace) => {
+      return membersOfSpace.spaceId === Number(payload.spaceId);
+    });
 
-        if (!manager) {
-          return Operation.notFoundError({
-            message: 'Manager does not exist!',
-          });
-        }
+    const spacesWithoutMainSpace = membersId.filter((membersOfSpace) => {
+      return membersOfSpace.spaceId !== Number(payload.spaceId);
+    });
 
-        await this.prismaService.teamMembership.create({
-          data: {
-            userId: member.id,
-            teamId: hierarchyTeam.id,
-            parentId: manager.id,
-            roleName: roleName,
-          },
-        });
-      } else {
-        await this.prismaService.teamMembership.create({
-          data: {
-            userId: member.id,
-            teamId: hierarchyTeam.id,
-            roleName: roleName,
-          },
-        });
-      }
-    }
+    await this.prismaService.spaceMembershipRole.createMany({
+      data: spacesWithoutMainSpace.map((member) => ({
+        roleId: DEFAULT_ROLES_ID.members,
+        spaceMembershipId: member.id,
+      })),
+    });
+
+    // Add roles to the membership in the current space
+    await this.prismaService.spaceMembershipRole.createMany({
+      data: roles.map((role) => ({
+        roleId: role,
+        spaceMembershipId: mainSpace.id,
+      })),
+    });
 
     return Operation.success({
-      message: 'Member added to the team successfully',
+      message: 'Member added to the space and its parent spaces successfully',
     });
   }
-
-  // async deleteTeamMember(payload: CommonMembershipPayloadDto) {
-  //   const [team, teamMember] = await Promise.all([
-  //     this.prismaService.team.findUnique({
-  //       where: { id: Number(payload.teamId) },
-  //     }),
-  //     this.prismaService.teamMembership.findFirst({
-  //       where: {
-  //         userId: Number(payload.memberId),
-  //         teamId: Number(payload.teamId),
-  //       },
-  //     }),
-  //   ]);
-
-  //   if (!team) {
-  //     return Operation.notFoundError({ message: 'Team does not exist!' });
-  //   }
-
-  //   if (!teamMember) {
-  //     return Operation.notFoundError({
-  //       message: 'Member not found in the team!',
-  //     });
-  //   }
-
-  //   this.prismaService.teamMembership.delete({
-  //     where: {
-  //       id: teamMember.id,
-  //     },
-  //   });
-
-  //   return Operation.success({
-  //     message: 'Member removed from the team successfully',
-  //   });
-  // }
-  // async getProjectMembership(
-  //   payload: Omit<CommonMembershipPayloadDto, 'memberId'>,
-  // ) {
-  //   const team = await this.prismaService.team.findUnique({
-  //     where: { id: Number(payload.teamId) },
-  //     include: {
-  //       TeamMembership: true,
-  //     },
-  //   });
-
-  //   if (!team) {
-  //     return Operation.notFoundError({ message: 'Team does not exists!' });
-  //   }
-  //   const project = await this.prismaService.project.findUnique({
-  //     where: { id: Number(payload.projectId) },
-  //     include: {
-  //       ProjectMembership: true,
-  //     },
-  //   });
-
-  //   if (!project) {
-  //     return Operation.notFoundError({ message: 'Project does not exists!' });
-  //   }
-
-  //   return Operation.success({
-  //     message: 'Team members retrieved successfully.',
-  //     result: project.ProjectMembership,
-  //   });
-  // }
-
-  // async addProjectMember(
-  //   { accessList = [], role }: CommonAddOrEditMembershipPayloadDto<false>,
-  //   payload: CommonMembershipPayloadDto,
-  // ) {
-  //   const [team, member, project] = await Promise.all([
-  //     this.prismaService.team.findUnique({
-  //       where: { id: Number(payload.teamId) },
-  //     }),
-  //     this.prismaService.user.findUnique({
-  //       where: { id: Number(payload.memberId) },
-  //     }),
-  //     this.prismaService.project.findUnique({
-  //       where: { id: Number(payload.projectId) },
-  //     }),
-  //   ]);
-
-  //   if (!team) {
-  //     return Operation.notFoundError({ message: 'Team does not exist!' });
-  //   }
-
-  //   if (!member) {
-  //     return Operation.notFoundError({ message: 'Member does not exist!' });
-  //   }
-
-  //   if (!project) {
-  //     return Operation.notFoundError({ message: 'Project does not exist!' });
-  //   }
-
-  //   await this.prismaService.projectMembership.create({
-  //     data: {
-  //       userId: Number(payload.memberId),
-  //       projectId: Number(payload.projectId),
-  //     },
-  //   });
-
-  //   return Operation.success({
-  //     message: 'Member added to the project successfully',
-  //   });
-  // }
-
-  // async deleteProjectMember(payload: CommonMembershipPayloadDto) {
-  //   const [team, project, projectMember] = await Promise.all([
-  //     this.prismaService.team.findUnique({
-  //       where: { id: Number(payload.teamId) },
-  //     }),
-  //     this.prismaService.project.findUnique({
-  //       where: {
-  //         teamId: Number(payload.teamId),
-  //         id: Number(payload.projectId),
-  //       },
-  //     }),
-  //     this.prismaService.projectMembership.findFirst({
-  //       where: {
-  //         userId: Number(payload.memberId),
-  //         projectId: Number(payload.projectId),
-  //       },
-  //     }),
-  //   ]);
-
-  //   if (!team) {
-  //     return Operation.notFoundError({ message: 'Team does not exist!' });
-  //   }
-
-  //   if (!project) {
-  //     return Operation.notFoundError({
-  //       message: 'Team does not exist!',
-  //     });
-  //   }
-
-  //   await this.prismaService.projectMembership.delete({
-  //     where: {
-  //       id: projectMember.id,
-  //     },
-  //   });
-
-  //   return Operation.success({
-  //     message: 'Member removed from the Project successfully',
-  //   });
-  // }
 }

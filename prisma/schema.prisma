@@ -20,70 +20,49 @@ model User {
   updatedAt   DateTime @updatedAt
   status      Status   @default(ACTIVE)
 
-  TeamMembership TeamMembership[] 
-  ProjectMembership ProjectMembership[]
+  spaceMembership SpaceMembership[] 
 }
 
-model Team {
+enum SpaceType {
+  TEAM
+  PROJECT
+  DIRECTORY
+}
+model Space {
   id              Int       @id @default(autoincrement())
   name            String
-  teamId          String    @default(uuid())
+  spaceId          String    @default(uuid())
   logo            String?  
   banner          String?  
   slogan          String?
   manifesto       String?
   parentId        Int? 
+  canCreateRoles  Boolean?  @default(true)
+  type            SpaceType? @default(TEAM)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  TeamMembership  TeamMembership[] 
 
-  projects        Project[]  @relation("TeamProjects")
+  spaceMembership  SpaceMembership[] 
+  spaceRole SpaceRole[]
+
+  Announcements Announcements[]
 }
 
-model Project {
-  id              Int       @id @default(autoincrement())
-  projectId       String    @default(uuid())
-  name            String
-  logo            String?
-  banner          String?  
-  slogan          String?
-  manifesto       String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  ProjectMembership ProjectMembership[]
 
-  teamId          Int
-  team            Team      @relation("TeamProjects", fields: [teamId], references: [id],onDelete: Cascade)
-}
-
-model TeamMembership {
+model SpaceMembership {
   id        Int       @id @default(autoincrement())
   userId    Int
-  teamId    Int
+  spaceId    Int
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   status    Status    @default(ACTIVE)
-  team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade,onUpdate: Cascade)
+  space      Space      @relation(fields: [spaceId], references: [id], onDelete: Cascade,onUpdate: Cascade)
   user      User      @relation(fields: [userId], references: [id],onDelete: Cascade,onUpdate: Cascade)
-  roleName  String?
-  parentId  Int?      
-  TeamMembershipRole TeamMembershipRole[]
+  spaceMembershipRole SpaceMembershipRole[]
+
+  AnnouncementsRead AnnouncementsRead[]
 }
 
-
-model ProjectMembership {
-  id        Int       @id @default(autoincrement())
-  userId    Int
-  projectId Int
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  status    Status    @default(ACTIVE)
-  user      User      @relation(fields: [userId], references: [id])
-  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  roleName  String?
-
-  ProjectMembershipRole ProjectMembershipRole[]
-}
 
 enum Status {
   ACTIVE
@@ -91,64 +70,73 @@ enum Status {
   BAN
 }
 
-
-model Role {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  scope     Scope     
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  Permission RoleActions[]
-
-  TeamMembershipRole TeamMembershipRole[]
-
-  ProjectMembershipRole ProjectMembershipRole[]
+model SpaceRole {
+  id                  Int                    @id @default(autoincrement())
+  name                String            
+  description         String?     
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  spaceId             Int?
+  space               Space?     @relation(fields: [spaceId], references: [id], onDelete: Cascade) 
+  spaceMembershipRole SpaceMembershipRole[]   @relation("spaceRoleMembership")
+  spaceRoleActions    SpaceRoleActions[]      @relation("RoleActions")
+  parentId            Int?     
 }
 
-model Actions {
-  id        Int       @id @default(autoincrement())
-  action    String    @unique
-  scope     Scope     
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+model SpaceActions {
+  id           Int                @id @default(autoincrement())
+  name         String             
+  description  String?
+  action       String             @unique
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 
-  permissions RoleActions[] 
+  spaceRoleActions SpaceRoleActions[] @relation("RoleActions")
 }
 
-model RoleActions {
-  id                Int       @id @default(autoincrement())
-  roleId            Int       
-  actionId Int
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+model SpaceRoleActions {
+  id                Int         @id @default(autoincrement())
+  roleId            Int
+  actionId          Int
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
-  role              Role             @relation(fields: [roleId], references: [id])
-  permissionAction  Actions @relation(fields: [actionId], references: [id])
+  spaceRole          SpaceRole    @relation("RoleActions", fields: [roleId], references: [id])
+  spaceAction        SpaceActions @relation("RoleActions", fields: [actionId], references: [id])
 }
 
-enum Scope {
-  TEAM
-  PROJECT
+
+model SpaceMembershipRole {
+  id                 Int             @id @default(autoincrement())
+  spaceMembershipId  Int
+  roleId             Int
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  spaceMembership     SpaceMembership  @relation(fields: [spaceMembershipId], references: [id], onDelete: Cascade)
+  spaceRole           SpaceRole        @relation("spaceRoleMembership", fields: [roleId], references: [id])
 }
 
-model TeamMembershipRole {
+model Announcements {
+  id                 Int      @id @default(autoincrement())
+  spaceId            Int
+  title              String
+  content            String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  expirationDate     DateTime?
+
+  space           Space     @relation(fields: [spaceId], references: [id])
+  readByUsers     AnnouncementsRead[]
+}
+
+
+model AnnouncementsRead {
   id              Int       @id @default(autoincrement())
-  teamMembershipId Int
-  roleId          Int
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  teamMembership  TeamMembership @relation(fields: [teamMembershipId], references: [id], onDelete: Cascade)
-  role            Role           @relation(fields: [roleId], references: [id])
-}
+  memberId        Int
+  announcementId  Int
+  readAt          DateTime  @default(now())
 
-model ProjectMembershipRole {
-  id               Int       @id @default(autoincrement())
-  projectMembershipId Int
-  roleId           Int
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-
-  projectMembership ProjectMembership @relation(fields: [projectMembershipId], references: [id], onDelete: Cascade)
-  role              Role              @relation(fields: [roleId], references: [id])
+  member            SpaceMembership      @relation(fields: [memberId], references: [id])
+  announcement      Announcements   @relation(fields: [announcementId], references: [id])
 }
