@@ -82,14 +82,14 @@ async function main() {
   await prisma.spaceRole.createMany({
     data: [
       {
-        id: 1,
+        id: -1,
         name: 'founder',
         description: 'A person with full access to all team actions.',
       },
       {
-        id: 2,
+        id: -2,
         name: 'member',
-        parentId: 1,
+        parentId: -1,
         description: 'A person without access',
       },
     ],
@@ -106,7 +106,7 @@ async function main() {
 
   await prisma.spaceRoleActions.createMany({
     data: FounderActions.map((action) => ({
-      roleId: 1,
+      roleId: -1,
       actionId: action.id,
     })),
   });
