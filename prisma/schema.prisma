@@ -47,7 +47,7 @@ model Space {
 
   Announcements Announcements[]
 
-  FormModule FormModule[]
+  SpaceModules SpaceModules[]
 }
 
 
@@ -64,7 +64,7 @@ model SpaceMembership {
 
   AnnouncementsRead AnnouncementsRead[]
 
-  FormSpaceMembers FormSpaceMembers[]
+  SpaceModulesMembers SpaceModulesMembers[]
 }
 
 
@@ -145,50 +145,67 @@ model AnnouncementsRead {
   announcement      Announcements   @relation(fields: [announcementId], references: [id])
 }
 
-enum FormStatus {
+enum ModuleStatus {
   ACTIVE
   BUILDING
   PUBLISHED
   DISABLED
 }
-model FormModule {
+
+enum ModuleType {
+  FORM_GENERATOR
+}
+model SpaceModules {
   id          Int       @id @default(autoincrement())
   title       String
-  status      FormStatus? @default(BUILDING)
+  status      ModuleStatus? @default(BUILDING)
   spaceId     Int
-  fields      Json?
-  settings    Json?
+  moduleType  ModuleType
 
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
   Space           Space     @relation(fields: [spaceId], references: [id])
-  FormSubmitions FormSubmitions[]
 
-  FormSpaceMembers FormSpaceMembers[]
+  SpaceModulesMembers SpaceModulesMembers[]
+
+  FormModule FormModule[]
 }
-enum FormSpaceMembersRole {
+
+enum SpaceModulesMembersRole {
   OWNER
   MEMBER
   REPORT_VIEWER
 }
-model FormSpaceMembers {
+
+model SpaceModulesMembers {
   id      Int @id @default(autoincrement())
   spaceMemberId Int
-  formId  Int
-  Role    FormSpaceMembersRole @default(MEMBER)
+  spaceModuleId  Int
+  Role    SpaceModulesMembersRole @default(MEMBER)
   SpaceMembership     SpaceMembership  @relation(fields: [spaceMemberId], references: [id], onDelete: Cascade)
-  Form     FormModule  @relation(fields: [formId], references: [id], onDelete: Cascade)
-
+  modules     SpaceModules  @relation(fields: [spaceModuleId], references: [id], onDelete: Cascade)
+  
   FormSubmitions FormSubmitions[]
 }
+
+model FormModule {
+  id          Int @id @default(autoincrement())
+  fields      Json?
+  settings    Json?
+  moduleId    Int
+
+  SpacesModules      SpaceModules     @relation(fields: [moduleId], references: [id])
+  FormSubmitions FormSubmitions[]
+}
+
 model FormSubmitions {
   id        Int @id @default(autoincrement())
   formId    Int
+  data      Json   
   formMemberId  Int
-  data      Json    
   createdAt DateTime @default(now())
 
-  FormMember    FormSpaceMembers @relation(fields: [formMemberId], references: [id], onDelete: Cascade)
-  Form      FormModule    @relation(fields: [formId], references: [id], onDelete: Cascade)
+  ModuleMembers    SpaceModulesMembers @relation(fields: [formMemberId], references: [id], onDelete: Cascade)
+  Form             FormModule    @relation(fields: [formId], references: [id], onDelete: Cascade)
 }

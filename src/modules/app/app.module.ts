@@ -7,7 +7,7 @@ import { SpaceActionsModule } from '../space-actions/space-actions.module';
 import { UserSpaceModule } from '../user-space/space.module';
 import { UserProfileModule } from '../user-profile/user-profile.module';
 import { AnnouncementsModule } from '../announcements/announcements.module';
-import { FormGeneratorModule } from '../form-generator/form-generator.module';
+import { SpacesModulesModule } from '../spaces-modules/spaces-modules.module';
 
 @Module({
   imports: [
@@ -21,7 +21,7 @@ import { FormGeneratorModule } from '../form-generator/form-generator.module';
     SpaceRolesModule,
     AnnouncementsModule,
     SpaceActionsModule,
-    FormGeneratorModule,
+    SpacesModulesModule,
   ],
   controllers: [],
   providers: [],

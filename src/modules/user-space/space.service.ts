@@ -72,6 +72,13 @@ export class UserSpaceService {
             id: true,
           },
         },
+        SpaceModules: {
+          select: {
+            moduleType: true,
+            title: true,
+            id: true,
+          },
+        },
         spaceMembership: {
           select: {
             spaceMembershipRole: {
@@ -94,17 +101,20 @@ export class UserSpaceService {
     }
 
     return Operation.success({
-      result: result.map(({ spaceMembership, Announcements, ...other }) => {
-        return {
-          ...other,
-          announcements: Announcements,
-          roles: spaceMembership[0]?.spaceMembershipRole.map(
-            (teamMemberRole) => {
-              return teamMemberRole.spaceRole;
-            },
-          ),
-        };
-      }),
+      result: result.map(
+        ({ spaceMembership, Announcements, SpaceModules, ...other }) => {
+          return {
+            ...other,
+            announcements: Announcements,
+            modules: SpaceModules,
+            roles: spaceMembership[0]?.spaceMembershipRole.map(
+              (teamMemberRole) => {
+                return teamMemberRole.spaceRole;
+              },
+            ),
+          };
+        },
+      ),
     });
   }
 
