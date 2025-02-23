@@ -46,6 +46,8 @@ model Space {
   spaceRole SpaceRole[]
 
   Announcements Announcements[]
+
+  FormModule FormModule[]
 }
 
 
@@ -61,6 +63,8 @@ model SpaceMembership {
   spaceMembershipRole SpaceMembershipRole[]
 
   AnnouncementsRead AnnouncementsRead[]
+
+  FormSpaceMembers FormSpaceMembers[]
 }
 
 
@@ -139,4 +143,52 @@ model AnnouncementsRead {
 
   member            SpaceMembership      @relation(fields: [memberId], references: [id])
   announcement      Announcements   @relation(fields: [announcementId], references: [id])
+}
+
+enum FormStatus {
+  ACTIVE
+  BUILDING
+  PUBLISHED
+  DISABLED
+}
+model FormModule {
+  id          Int       @id @default(autoincrement())
+  title       String
+  status      FormStatus? @default(BUILDING)
+  spaceId     Int
+  fields      Json?
+  settings    Json?
+
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  Space           Space     @relation(fields: [spaceId], references: [id])
+  FormSubmitions FormSubmitions[]
+
+  FormSpaceMembers FormSpaceMembers[]
+}
+enum FormSpaceMembersRole {
+  OWNER
+  MEMBER
+  REPORT_VIEWER
+}
+model FormSpaceMembers {
+  id      Int @id @default(autoincrement())
+  spaceMemberId Int
+  formId  Int
+  Role    FormSpaceMembersRole @default(MEMBER)
+  SpaceMembership     SpaceMembership  @relation(fields: [spaceMemberId], references: [id], onDelete: Cascade)
+  Form     FormModule  @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  FormSubmitions FormSubmitions[]
+}
+model FormSubmitions {
+  id        Int @id @default(autoincrement())
+  formId    Int
+  formMemberId  Int
+  data      Json    
+  createdAt DateTime @default(now())
+
+  FormMember    FormSpaceMembers @relation(fields: [formMemberId], references: [id], onDelete: Cascade)
+  Form      FormModule    @relation(fields: [formId], references: [id], onDelete: Cascade)
 }
