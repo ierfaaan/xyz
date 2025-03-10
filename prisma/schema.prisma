@@ -154,6 +154,7 @@ enum ModuleStatus {
 
 enum ModuleType {
   FORM_GENERATOR
+  KANBAN_BOARD
 }
 model SpaceModules {
   id          Int       @id @default(autoincrement())
